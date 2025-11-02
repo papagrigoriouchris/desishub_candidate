@@ -39,7 +39,9 @@ export default async function AdminPage({
       tier: c.assessments[0]?.computedTier ?? null,
       rulesTrace: c.assessments[0]?.rulesTrace ?? [],
     }))
-    .filter((r) => (typeof tier === "number" ? r.tier === tier : true));
+    .filter((r: { tier: number | null }) =>
+      typeof tier === "number" ? r.tier === tier : true,
+    );
 
   return (
     <div className="p-6 space-y-6">
