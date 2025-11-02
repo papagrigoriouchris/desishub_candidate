@@ -8,6 +8,8 @@
     ]
   },
   "scripts": {
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate",
     "dev": "next dev",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
