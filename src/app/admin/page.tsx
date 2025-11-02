@@ -31,7 +31,7 @@ export default async function AdminPage({
   });
 
   const rows = candidates
-    .map((c) => ({
+    .map((c: (typeof candidates)[number]) => ({
       id: c.id,
       name: c.name,
       email: c.email,
