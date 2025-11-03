@@ -4,7 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user?.role !== "ADMIN") {
+  if (!session || session.user?.role !== "admin") {
     throw new Error("Ανεπαρκή δικαιώματα");
   }
   return session;
