@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { computeTier } from "@/lib/tiering";
 import { revalidatePath } from "next/cache";
+import { notifyNewApplication } from "@/lib/mail";
 
 type Payload = {
   name: string;
@@ -64,6 +65,16 @@ export async function submitApplication(payload: Payload) {
 
   // Σχόλιο (GR): Revalidate σελίδων που δείχνουν λίστες (π.χ. admin)
   revalidatePath("/admin");
+
+  try {
+    await notifyNewApplication({
+      candidate: { name: candidate.name, email: candidate.email },
+      tier,
+      trace,
+    });
+  } catch (error) {
+    console.error("[mail] Αποτυχία ειδοποίησης νέας αίτησης:", error);
+  }
 
   return { candidateId: candidate.id, tier };
 }
