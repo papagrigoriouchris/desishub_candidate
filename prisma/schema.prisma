@@ -1,0 +1,103 @@
+
+// Σχόλιο (GR): Ορίζουμε τον πάροχο και το URL της βάσης
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Σχόλιο (GR): Admin χρήστης για το dashboard
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  passwordHash  String?  // για Credentials login
+  role          String   @default("admin")
+  createdAt     DateTime @default(now())
+  sessions      Session[]
+  accounts      Account[]
+}
+
+// Σχόλιο (GR): Υποψήφιος
+model Candidate {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  phone       String?
+  createdAt   DateTime     @default(now())
+  answers     Answer[]
+  assessments Assessment[]
+}
+
+// Σχόλιο (GR): Ερώτηση αξιολόγησης
+model Question {
+  id       String   @id @default(cuid())
+  key      String   @unique // π.χ. "knows_nextjs"
+  text     String
+  weight   Int      @default(1)
+  createdAt DateTime @default(now())
+  answers  Answer[]
+}
+
+// Σχόλιο (GR): Απάντηση υποψηφίου σε ερώτηση
+model Answer {
+  id          String    @id @default(cuid())
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId String
+  question    Question  @relation(fields: [questionId], references: [id])
+  questionId  String
+  value       String    // π.χ. "yes" ή "score:3" (θα τυποποιήσουμε αργότερα)
+  createdAt   DateTime  @default(now())
+
+  @@unique([candidateId, questionId])
+}
+
+// Σχόλιο (GR): Αποτέλεσμα κατάταξης + ίχνος κανόνων
+model Assessment {
+  id           String    @id @default(cuid())
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  candidateId  String
+  computedTier Int
+  rulesTrace   Json      // εξήγηση γιατί προέκυψε αυτό το tier
+  completedAt  DateTime  @default(now())
+}
+
+// Σχόλιο (GR): Πίνακες NextAuth (adapter)
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
