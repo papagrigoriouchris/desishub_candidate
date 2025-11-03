@@ -1,10 +1,17 @@
 // Σχόλιο (GR): Ρυθμίσεις NextAuth με PrismaAdapter, Google & Credentials
-import type { NextAuthOptions } from "next-auth";
+import type { DefaultSession, NextAuthOptions, User } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+
+type AppUser = User & { id: string; role?: string };
+type TokenWithRole = JWT & { role?: string };
+type SessionWithRole = DefaultSession & {
+  user: DefaultSession["user"] & { role: string };
+};
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -32,12 +39,12 @@ export const authOptions: NextAuthOptions = {
           user.passwordHash,
         );
         return ok
-          ? ({
+          ? {
               id: user.id,
               email: user.email,
               name: user.name,
               role: user.role,
-            } as any)
+            }
           : null;
       },
     }),
@@ -45,13 +52,19 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       // Σχόλιο (GR): Περνάμε το role στο JWT για εύκολο έλεγχο
-      if (user) token.role = (user as any).role ?? "admin";
-      return token;
+      const tokenWithRole = token as TokenWithRole;
+      if (user) tokenWithRole.role = (user as AppUser).role ?? "admin";
+      return tokenWithRole;
     },
     async session({ session, token }) {
       // Σχόλιο (GR): Περνάμε το role και στο session object
-      (session as any).user.role = (token as any).role ?? "admin";
-      return session;
+      const sessionWithRole = session as SessionWithRole;
+      const tokenWithRole = token as TokenWithRole;
+      sessionWithRole.user = {
+        ...(sessionWithRole.user ?? {}),
+        role: tokenWithRole.role ?? "admin",
+      };
+      return sessionWithRole;
     },
   },
   pages: {

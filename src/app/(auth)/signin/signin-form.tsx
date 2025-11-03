@@ -8,6 +8,9 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const schema = z.object({
   email: z.string().email("Μη έγκυρο email"),
@@ -19,6 +22,7 @@ type FormData = z.infer<typeof schema>;
 export function SignInForm() {
   // Σχόλιο (GR): Τοπική κατάσταση για μηνύματα λάθους/φόρτωσης
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -30,11 +34,16 @@ export function SignInForm() {
     setError(null);
     const res = await signIn("credentials", {
       ...data,
-      redirect: true,
-      callbackUrl: "/admin",
+      redirect: false,
     });
     // Σχόλιο (GR): Το NextAuth θα κάνει redirect, εδώ απλά εμφανίζουμε λάθη αν υπάρξουν
-    if (res?.error) setError("Αποτυχία σύνδεσης. Ελέγξτε στοιχεία.");
+    if (res?.error) {
+      const message = "Αποτυχία σύνδεσης. Ελέγξτε στοιχεία.";
+      setError(message);
+      toast.error(message);
+      return;
+    }
+    router.push("/admin");
   };
 
   // Σχόλιο (GR): Είσοδος με Google OAuth
@@ -75,6 +84,9 @@ export function SignInForm() {
         >
           Σύνδεση με Google
         </Button>
+        <Link href="/" className="block text-center text-sm underline">
+          Αρχική οθόνη
+        </Link>
       </form>
     </div>
   );

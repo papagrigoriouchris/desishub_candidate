@@ -12,7 +12,7 @@ type Row = {
   email: string;
   createdAt: string | Date;
   tier: number | null;
-  rulesTrace: string[] | any;
+  rulesTrace: string[] | Record<string, unknown> | null;
 };
 
 export default function AdminTable({ rows }: { rows: Row[] }) {
@@ -113,7 +113,9 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                     <div className="mt-2 text-xs whitespace-pre-wrap">
                       {Array.isArray(r.rulesTrace)
                         ? r.rulesTrace.join("\n")
-                        : JSON.stringify(r.rulesTrace, null, 2)}
+                        : r.rulesTrace
+                          ? JSON.stringify(r.rulesTrace, null, 2)
+                          : "—"}
                     </div>
                   </details>
                 </td>

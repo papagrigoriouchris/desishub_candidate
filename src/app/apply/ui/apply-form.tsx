@@ -1,14 +1,16 @@
 "use client";
 // Σχόλιο (GR): Client φόρμα με RHF + Zod, καλεί server action submitApplication
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { submitApplication } from "../actions";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const schema = z.object({
   name: z.string().min(2, "Πολύ σύντομο"),
@@ -43,18 +45,32 @@ export default function ApplyForm({
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
+    control,
     formState: { isSubmitting, errors },
   } = form;
-  const [result, setResult] = useState<{ tier: number } | null>(null);
+  const answers = useWatch({ control, name: "answers" });
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   // Σχόλιο (GR): Υποβολή που καλεί server action και δείχνει αποτέλεσμα
   const onSubmit = (data: FormData) => {
-    startTransition(async () => {
-      const res = await submitApplication(data);
-      setResult({ tier: res.tier });
+    startTransition(() => {
+      submitApplication(data)
+        .then((res) => {
+          toast.success(`Κατατάχθηκες στο Tier ${res.tier}`, {
+            description:
+              "Θα ενημερωθείς σύντομα για την πορεία της αίτησής σου.",
+          });
+          router.push("/apply/success");
+        })
+        .catch((error) => {
+          console.error(error);
+          toast.error("Η υποβολή απέτυχε", {
+            description:
+              "Δοκίμασε ξανά αργότερα ή έλεγξε τα στοιχεία που συμπλήρωσες.",
+          });
+        });
     });
   };
 
@@ -97,22 +113,32 @@ export default function ApplyForm({
                   <Button
                     type="button"
                     variant={
-                      (watch(`answers.${idx}.value`) ?? "no") === "yes"
+                      (answers?.[idx]?.value ?? "no") === "yes"
                         ? "default"
                         : "outline"
                     }
-                    onClick={() => setValue(`answers.${idx}.value`, "yes")}
+                    onClick={() =>
+                      setValue(`answers.${idx}.value`, "yes", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
                   >
                     Ναι
                   </Button>
                   <Button
                     type="button"
                     variant={
-                      (watch(`answers.${idx}.value`) ?? "no") === "no"
+                      (answers?.[idx]?.value ?? "no") === "no"
                         ? "default"
                         : "outline"
                     }
-                    onClick={() => setValue(`answers.${idx}.value`, "no")}
+                    onClick={() =>
+                      setValue(`answers.${idx}.value`, "no", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
                   >
                     Όχι
                   </Button>
@@ -134,12 +160,14 @@ export default function ApplyForm({
         <Button type="submit" disabled={isSubmitting || isPending}>
           Υποβολή
         </Button>
-        {result && (
-          <span className="text-sm">
-            ✅ Το σύστημά μας σε κατέταξε στο{" "}
-            <strong>Tier {result.tier}</strong>.
-          </span>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/")}
+          disabled={isPending}
+        >
+          Ακύρωση
+        </Button>
       </div>
     </form>
   );
