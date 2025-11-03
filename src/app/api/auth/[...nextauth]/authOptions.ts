@@ -7,10 +7,12 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
-type AppUser = User & { id: string; role?: string };
-type TokenWithRole = JWT & { role?: string };
+type Role = "admin" | "user";
+
+type AppUser = User & { id: string; role?: Role };
+type TokenWithRole = JWT & { role?: Role };
 type SessionWithRole = DefaultSession & {
-  user: DefaultSession["user"] & { role: string };
+  user: DefaultSession["user"] & { role: Role };
 };
 
 export const authOptions: NextAuthOptions = {
@@ -38,14 +40,15 @@ export const authOptions: NextAuthOptions = {
           credentials.password,
           user.passwordHash,
         );
-        return ok
-          ? {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              role: user.role,
-            }
-          : null;
+        if (!ok) return null;
+        const role =
+          user.role?.toLowerCase() === "admin" ? ("admin" as Role) : "user";
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role,
+        };
       },
     }),
   ],
