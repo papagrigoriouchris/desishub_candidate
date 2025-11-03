@@ -2,7 +2,7 @@ import "next-auth";
 import "next-auth/jwt";
 
 declare module "next-auth" {
-  type Role = "ADMIN" | "USER";
+  type Role = "admin" | "user";
 
   interface User {
     role: Role;
@@ -20,7 +20,7 @@ declare module "next-auth" {
 }
 
 declare module "next-auth/jwt" {
-  type Role = "ADMIN" | "USER";
+  type Role = "admin" | "user";
   interface JWT {
     role?: Role; // 👈 και στο JWT
   }
