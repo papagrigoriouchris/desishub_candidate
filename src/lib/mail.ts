@@ -27,15 +27,20 @@ async function sendEmail({
     return { skipped: true };
   }
   try {
-    const result = await resend.emails.send({
+    const response = await resend.emails.send({
       from: RESEND_FROM,
       to,
       subject,
       text,
       html,
     });
-    console.log("[mail] Απεστάλη:", { to, id: result.id });
-    return { ok: true, id: result.id };
+    if (response.error) {
+      console.error("[mail] Σφάλμα αποστολής:", response.error);
+      return { ok: false, error: response.error };
+    }
+    const id = response.data?.id ?? "unknown";
+    console.log("[mail] Απεστάλη:", { to, id });
+    return { ok: true, id };
   } catch (error) {
     console.error("[mail] Σφάλμα αποστολής:", error);
     return { ok: false, error };
